@@ -1,0 +1,7 @@
+*.pkg.tar.zst
+*.log
+src/
+pkg/
+out/
+*.sha256
+*.json
