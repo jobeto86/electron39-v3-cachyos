@@ -1,45 +1,33 @@
-# Electron 39 Optimized for CachyOS (x86-64-v3)
+# Electron 39 (x86-64-v3) for CachyOS
 
-[English](#english) | [Español](#español)
+This repository provides an optimized build of **Electron 39** specifically compiled for **CachyOS** using the **x86-64-v3** architecture.
 
----
+## Why this exists?
+Standard Electron builds sometimes face compatibility or performance issues on rolling-release distributions with advanced instruction sets like CachyOS. This build is verified to work with tools like `antigravity`.
 
-## English
+## 🚀 Quick Installation (Binary)
 
-This project provides a specialized build of **Electron 39** optimized for **CachyOS** and modern CPUs supporting the `x86-64-v3` instruction set (AVX, AVX2, FMA, BMI2). 
+You don't need to compile it! Install the latest pre-compiled binary directly from the Releases page:
 
-### 🚀 Features
-- **CPU Optimization:** Compiled with `-march=x86-64-v3` for improved performance in V8 and rendering tasks.
-- **Glibc 2.43+ Compatibility:** Includes a critical patch for `SYS_SECCOMP` macro collision, fixing compilation failures on the latest Arch/CachyOS systems.
-- **Ninja Workflow:** Documentation on how to use `ninja` directly to avoid losing progress on failed builds.
-- **System Libraries:** Configured to use system libraries where possible for better integration.
+```bash
+sudo pacman -U https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v39.5.2-v3/electron39-39.5.2-1-x86_64.pkg.tar.zst
+```
 
-### 🛠️ How to Build
-1. Clone this repository.
-2. Run `makepkg -s` to prepare the source and dependencies.
-3. If the build fails during the long compilation phase, use the `GUIA_NINJA.md` instructions to resume using `ninja` without restarting from scratch.
-4. Install with `sudo pacman -U electron39-*.pkg.tar.zst`.
+## 🛠 Manual Build
+If you prefer to build it yourself:
 
----
+1. Clone this repo.
+2. Ensure you have `base-devel` and `cachyos-settings` (for v3 optimizations).
+3. Run:
+   ```bash
+   makepkg -si
+   ```
 
-## Español
-
-Este proyecto ofrece una compilación especializada de **Electron 39** optimizada para **CachyOS** y CPUs modernas que soportan el conjunto de instrucciones `x86-64-v3` (AVX, AVX2, FMA, BMI2).
-
-### 🚀 Características
-- **Optimización de CPU:** Compilado con `-march=x86-64-v3` para un mejor rendimiento en el motor V8 y tareas de renderizado.
-- **Compatibilidad con Glibc 2.43+:** Incluye un parche crítico para la colisión de la macro `SYS_SECCOMP`, solucionando fallos de compilación en los sistemas Arch/CachyOS más recientes.
-- **Flujo de Trabajo Ninja:** Documentación sobre cómo usar `ninja` directamente para evitar perder el progreso en compilaciones fallidas.
-- **Librerías del Sistema:** Configurado para usar librerías del sistema donde sea posible para una mejor integración.
-
-### 🛠️ Cómo Compilar
-1. Clona este repositorio.
-2. Ejecuta `makepkg -s` para preparar las fuentes y dependencias.
-3. Si la compilación falla durante la fase larga, sigue las instrucciones en `GUIA_NINJA.md` para retomar usando `ninja` sin empezar desde cero.
-4. Instala con `sudo pacman -U electron39-*.pkg.tar.zst`.
+## Technical Details
+- **Version:** 39.5.2
+- **Architecture:** x86-64-v3 (Optimized for modern CPUs)
+- **OS Target:** CachyOS / Arch Linux
+- **Compiler:** Clang/LLVM with CachyOS flags.
 
 ---
-
-## Acknowledgments / Agradecimientos
-- **Community:** Developed for the CachyOS community.
-- **Fix:** Special thanks for the `glibc 2.43` SYS_SECCOMP fix.
+*Maintained by [jobeto86](https://github.com/jobeto86)*
