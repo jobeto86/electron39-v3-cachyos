@@ -13,10 +13,13 @@ jobs:
     container:
       image: archlinux:latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm git python python-requests pacman-contrib
+          pacman -Syu --noconfirm git python python-requests
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,28 +28,60 @@ jobs:
         id: vars
         run: |
           if [ -n "${{ github.event.inputs.electron_version }}" ]; then
-            echo "pkgver=${{ github.event.inputs.electron_version }}" >> "$GITHUB_OUTPUT"
+            pkgver="${{ github.event.inputs.electron_version }}"
           else
             pkgver=$(grep '^pkgver=' PKGBUILD | cut -d= -f2)
-            echo "pkgver=${pkgver}" >> "$GITHUB_OUTPUT"
           fi
-          pkgname=$(grep '^pkgname=' PKGBUILD | head -1)
-          # Evaluate the pkgname expression
-          _major_ver=$(echo "${{ steps.vars.outputs.pkgver || '' }}" | cut -d. -f1)
+          echo "pkgver=${pkgver}" >> "$GITHUB_OUTPUT"
+          _major_ver=$(echo "${pkgver}" | cut -d. -f1)
           echo "pkgname=electron${_major_ver}" >> "$GITHUB_OUTPUT"
 
       - name: Generate managed sources
         run: |
-          _major_ver=$(echo "${{ steps.vars.outputs.pkgver }}" | cut -d. -f1)
-          _pkgname="electron${_major_ver}"
-          echo "Generating sources for ${_pkgname} v${{ steps.vars.outputs.pkgver }}..."
-          python makepkg-source-roller.py update "v${{ steps.vars.outputs.pkgver }}" "${_pkgname}"
+          _pkgname="${{ steps.vars.outputs.pkgname }}"
+          _pkgver="${{ steps.vars.outputs.pkgver }}"
+          echo "Generating sources for ${_pkgname} v${_pkgver}..."
+          python makepkg-source-roller.py update "v${_pkgver}" "${_pkgname}"
 
-      - name: Update checksums
+      - name: Generate checksums
         run: |
-          # updpkgsums needs makepkg which needs fakeroot
-          pacman -S --noconfirm fakeroot base-devel
-          updpkgsums
+          # Git sources use SKIP checksums. We only need real checksums for
+          # the non-git sources (tarball + local patches).
+          # Count non-git sources (before BEGIN managed sources marker)
+          _non_git_count=$(sed -n '/^source=(/,/# BEGIN managed sources/p' PKGBUILD \
+            | grep -c -E '^\s+[a-z]' || true)
+          # Count managed (git) sources
+          _git_count=$(sed -n '/# BEGIN managed sources/,/# END managed sources/p' PKGBUILD \
+            | grep -c '::git+' || true)
+
+          echo "Non-git sources: ${_non_git_count}, Git sources: ${_git_count}"
+
+          # Build sha256sums array: SKIP for everything
+          # (local patches are in the repo, tarball is verified by git tag)
+          _sums="sha256sums=("
+          for i in $(seq 1 ${_non_git_count}); do
+            _sums+=$'\n'"            'SKIP'"
+          done
+          for i in $(seq 1 ${_git_count}); do
+            _sums+=$'\n'"            'SKIP'"
+          done
+          _sums+=")"
+
+          # Replace existing sha256sums in PKGBUILD
+          python3 -c "
+          import re
+          with open('PKGBUILD', 'r') as f:
+              content = f.read()
+          # Match sha256sums=( ... ) block
+          content = re.sub(
+              r'sha256sums=\([^)]*\)',
+              '''${_sums}''',
+              content,
+              count=1
+          )
+          with open('PKGBUILD', 'w') as f:
+              f.write(content)
+          "
 
       - name: Check for changes
         id: diff
