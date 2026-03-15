@@ -41,6 +41,16 @@ class Str:
         return self.inner
 
 
+def eval_condition(condition, globals_dict, locals_dict):
+    """Evaluate a DEPS condition string, treating unknown variables as False."""
+    try:
+        return eval(condition, globals_dict, locals_dict)
+    except NameError as e:
+        # Unknown variable (e.g. checkout_ai_evals in newer Chromium) — skip the dep
+        eprint(f"  Unknown condition variable ({e}), treating as False: {condition}")
+        return False
+
+
 ignored_dep_prefix = [
     # MacOS specific
     "src/third_party/squirrel.mac",
@@ -134,7 +144,7 @@ def parse_deps(path, prefix="", is_src=False, vars=None, reverse_map=None):
                 if dep_value["dep_type"] == "cipd":
                     cipd_deps[format_path(dep_name)] = dep_value["packages"]
                 elif dep_value["dep_type"] == "gcs":
-                    if "condition" in dep_value and not eval(
+                    if "condition" in dep_value and not eval_condition(
                         dep_value["condition"], vars, deps_module.vars
                     ):
                         eprint(
