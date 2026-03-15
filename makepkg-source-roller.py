@@ -86,6 +86,9 @@ def parse_deps(path, prefix="", is_src=False, vars=None, reverse_map=None):
         "checkout_mips64",
         "checkout_mips",
         "checkout_arm",
+        "checkout_ppc",
+        "checkout_s390",
+        "checkout_riscv64",
     ):
         deps_module.vars[k] = False
     deps_module.vars["checkout_linux"] = True
