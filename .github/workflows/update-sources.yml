@@ -1,0 +1,63 @@
+name: Update managed sources
+
+on:
+  workflow_dispatch:
+    inputs:
+      electron_version:
+        description: 'Electron version (e.g. 39.5.2). Leave empty to use pkgver from PKGBUILD.'
+        required: false
+
+jobs:
+  update-sources:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm git python python-requests pacman-contrib
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract pkgver from PKGBUILD
+        id: vars
+        run: |
+          if [ -n "${{ github.event.inputs.electron_version }}" ]; then
+            echo "pkgver=${{ github.event.inputs.electron_version }}" >> "$GITHUB_OUTPUT"
+          else
+            pkgver=$(grep '^pkgver=' PKGBUILD | cut -d= -f2)
+            echo "pkgver=${pkgver}" >> "$GITHUB_OUTPUT"
+          fi
+          pkgname=$(grep '^pkgname=' PKGBUILD | head -1)
+          # Evaluate the pkgname expression
+          _major_ver=$(echo "${{ steps.vars.outputs.pkgver || '' }}" | cut -d. -f1)
+          echo "pkgname=electron${_major_ver}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate managed sources
+        run: |
+          _major_ver=$(echo "${{ steps.vars.outputs.pkgver }}" | cut -d. -f1)
+          _pkgname="electron${_major_ver}"
+          echo "Generating sources for ${_pkgname} v${{ steps.vars.outputs.pkgver }}..."
+          python makepkg-source-roller.py update "v${{ steps.vars.outputs.pkgver }}" "${_pkgname}"
+
+      - name: Update checksums
+        run: |
+          # updpkgsums needs makepkg which needs fakeroot
+          pacman -S --noconfirm fakeroot base-devel
+          updpkgsums
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet PKGBUILD && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD
+          git commit -m "chore: update managed sources for v${{ steps.vars.outputs.pkgver }}"
+          git push
