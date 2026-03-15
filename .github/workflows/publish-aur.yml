@@ -1,0 +1,50 @@
+name: Publish to AUR
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm git openssh pacman-contrib fakeroot base-devel
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH for AUR
+        run: |
+          mkdir -p /root/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > /root/.ssh/id_ed25519
+          chmod 600 /root/.ssh/id_ed25519
+          ssh-keyscan aur.archlinux.org >> /root/.ssh/known_hosts 2>/dev/null
+
+      - name: Clone AUR repo
+        run: |
+          git config --global user.name "Roberto Ramirez"
+          git config --global user.email "${{ secrets.AUR_EMAIL }}"
+          git clone ssh://aur@aur.archlinux.org/electron39-v3-bin.git /tmp/aur-pkg || \
+            (mkdir -p /tmp/aur-pkg && cd /tmp/aur-pkg && git init && git remote add origin ssh://aur@aur.archlinux.org/electron39-v3-bin.git)
+
+      - name: Copy PKGBUILD and generate .SRCINFO
+        run: |
+          cp aur/PKGBUILD /tmp/aur-pkg/PKGBUILD
+          cd /tmp/aur-pkg
+          # Create a non-root user for makepkg
+          useradd -m builder
+          chown -R builder:builder /tmp/aur-pkg
+          su builder -c "makepkg --printsrcinfo" > .SRCINFO
+
+      - name: Push to AUR
+        run: |
+          cd /tmp/aur-pkg
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update electron39-v3-bin to $(grep pkgver= PKGBUILD | cut -d= -f2)" || echo "No changes"
+          git push origin master
