@@ -2,6 +2,10 @@ name: Publish to AUR
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 39.5.2). Leave empty to read from aur/PKGBUILD'
+        required: false
   release:
     types: [published]
 
@@ -9,7 +13,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     container:
-      image: archlinux:latest
+      image: archlinux:base
 
     steps:
       - name: Install dependencies
@@ -18,6 +22,48 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Resolve version and artifact URL
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            # Extract from release tag: v39.5.2-v3 → 39.5.2
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#v}"
+            VERSION="${VERSION%-v3}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="$(grep '^pkgver=' aur/PKGBUILD | cut -d= -f2)"
+          fi
+
+          ARTIFACT_URL="https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v${VERSION}-v3/electron39-${VERSION}-1-x86_64.pkg.tar.zst"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "artifact_url=${ARTIFACT_URL}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
+          echo "Artifact URL: ${ARTIFACT_URL}"
+
+      - name: Download artifact and compute sha256
+        id: checksum
+        run: |
+          curl -fSL -o /tmp/electron.pkg.tar.zst "${{ steps.meta.outputs.artifact_url }}"
+          SHA256="$(sha256sum /tmp/electron.pkg.tar.zst | cut -d' ' -f1)"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+          echo "SHA256: ${SHA256}"
+          rm -f /tmp/electron.pkg.tar.zst
+
+      - name: Patch aur/PKGBUILD with version and checksum
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          SHA256="${{ steps.checksum.outputs.sha256 }}"
+          cd aur
+
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${SHA256}')/" PKGBUILD
+
+          echo "--- Patched PKGBUILD ---"
+          grep -E '^(pkgver|pkgrel|sha256sums)=' PKGBUILD
 
       - name: Setup SSH for AUR
         run: |
@@ -33,19 +79,27 @@ jobs:
           git clone ssh://aur@aur.archlinux.org/electron39-v3-bin.git /tmp/aur-pkg || \
             (mkdir -p /tmp/aur-pkg && cd /tmp/aur-pkg && git init && git remote add origin ssh://aur@aur.archlinux.org/electron39-v3-bin.git)
 
-      - name: Copy PKGBUILD and generate .SRCINFO
+      - name: Copy files and generate .SRCINFO
         run: |
           cp aur/PKGBUILD /tmp/aur-pkg/PKGBUILD
+          cp aur/electron39-v3-bin.install /tmp/aur-pkg/electron39-v3-bin.install
           cd /tmp/aur-pkg
-          # Create a non-root user for makepkg
-          useradd -m builder
+
+          useradd -m builder 2>/dev/null || true
           chown -R builder:builder /tmp/aur-pkg
-          su builder -c "makepkg --printsrcinfo" > .SRCINFO
+          su builder -c "makepkg --printsrcinfo > .SRCINFO"
 
       - name: Push to AUR
         run: |
+          VERSION="${{ steps.meta.outputs.version }}"
           git config --global --add safe.directory /tmp/aur-pkg
           cd /tmp/aur-pkg
-          git add PKGBUILD .SRCINFO
-          git commit -m "Update electron39-v3-bin to $(grep pkgver= PKGBUILD | cut -d= -f2)" || echo "No changes"
+          git add PKGBUILD .SRCINFO electron39-v3-bin.install
+
+          if git diff --cached --quiet; then
+            echo "No changes to publish"
+            exit 0
+          fi
+
+          git commit -m "Update electron39-v3-bin to ${VERSION}"
           git push origin master
