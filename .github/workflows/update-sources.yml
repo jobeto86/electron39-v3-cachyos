@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       electron_version:
-        description: 'Electron version (e.g. 39.5.2). Leave empty to use pkgver from PKGBUILD.'
+        description: 'Electron version (e.g. 41.0.2). Leave empty to use pkgver from PKGBUILD.'
         required: false
 
 jobs:

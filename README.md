@@ -1,13 +1,19 @@
-# Electron 39 (x86-64-v3) for CachyOS
+# Electron 41 (x86-64-v3) for CachyOS
 
-Optimized build of **Electron 39** for **CachyOS** using the **x86-64-v3** microarchitecture level.
+Optimized build of **Electron 41** for **CachyOS** using the **x86-64-v3** microarchitecture level.
 
 ## Quick Installation (Binary)
 
 Install the pre-compiled binary from Releases:
 
 ```bash
-sudo pacman -U https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v39.5.2-v3/electron39-39.5.2-1-x86_64.pkg.tar.zst
+sudo pacman -U https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v41.0.2-v3/electron41-41.0.2-1-x86_64.pkg.tar.zst
+```
+
+Or from AUR:
+
+```bash
+yay -S electron41-v3-bin
 ```
 
 ## Building from source
@@ -56,8 +62,9 @@ makepkg -si
 
 | | |
 |---|---|
-| **Electron** | 39.5.2 |
-| **Chromium** | ~142.x |
+| **Electron** | 41.0.2 |
+| **Chromium** | ~146.x |
+| **Node.js** | 24.14.0 |
 | **Arch level** | x86-64-v3 |
 | **Target OS** | CachyOS / Arch Linux |
 | **Compiler** | Clang/LLVM |

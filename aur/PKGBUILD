@@ -1,14 +1,14 @@
 # Maintainer: Roberto Ramirez (jobeto86) <https://github.com/jobeto86>
 
-pkgname=electron39-v3-bin
-pkgver=39.5.2
+pkgname=electron41-v3-bin
+pkgver=41.0.2
 pkgrel=1
-pkgdesc='Electron 39 optimized for x86-64-v3 with glibc 2.43 fix (prebuilt binary)'
+pkgdesc='Electron 41 optimized for x86-64-v3 with glibc 2.43 fix (prebuilt binary)'
 arch=('x86_64')
 url='https://github.com/jobeto86/electron39-v3-cachyos'
 license=('MIT' 'BSD-3-Clause')
-provides=("electron39=${pkgver}")
-conflicts=('electron39')
+provides=("electron41=${pkgver}")
+conflicts=('electron41')
 depends=('c-ares'
          'gcc-libs'
          'glibc'
@@ -25,14 +25,14 @@ optdepends=('kde-cli-tools: file deletion support (kioclient5)'
             'trash-cli: file deletion support (trash-put)'
             'xdg-utils: open URLs with desktop default')
 options=('!strip')
-install=electron39-v3-bin.install
+install=electron41-v3-bin.install
 # Download the pre-built pacman package from GitHub Releases
-source=("https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v${pkgver}-v3/electron39-${pkgver}-1-x86_64.pkg.tar.zst")
+source=("https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v${pkgver}-v3/electron41-${pkgver}-1-x86_64.pkg.tar.zst")
 sha256sums=('SKIP')
-noextract=("electron39-${pkgver}-1-x86_64.pkg.tar.zst")
+noextract=("electron41-${pkgver}-1-x86_64.pkg.tar.zst")
 
 package() {
   # Extract the pre-built package contents into pkgdir
-  bsdtar -xf "${srcdir}/electron39-${pkgver}-1-x86_64.pkg.tar.zst" -C "${pkgdir}" \
+  bsdtar -xf "${srcdir}/electron41-${pkgver}-1-x86_64.pkg.tar.zst" -C "${pkgdir}" \
     --exclude='.PKGINFO' --exclude='.BUILDINFO' --exclude='.MTREE'
 }

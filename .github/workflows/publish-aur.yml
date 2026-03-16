@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g. 39.5.2). Leave empty to read from aur/PKGBUILD'
+        description: 'Version to publish (e.g. 41.0.2). Leave empty to read from aur/PKGBUILD'
         required: false
   release:
     types: [published]
@@ -27,7 +27,6 @@ jobs:
         id: meta
         run: |
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            # Extract from release tag: v39.5.2-v3 → 39.5.2
             TAG="${{ github.event.release.tag_name }}"
             VERSION="${TAG#v}"
             VERSION="${VERSION%-v3}"
@@ -37,7 +36,7 @@ jobs:
             VERSION="$(grep '^pkgver=' aur/PKGBUILD | cut -d= -f2)"
           fi
 
-          ARTIFACT_URL="https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v${VERSION}-v3/electron39-${VERSION}-1-x86_64.pkg.tar.zst"
+          ARTIFACT_URL="https://github.com/jobeto86/electron39-v3-cachyos/releases/download/v${VERSION}-v3/electron41-${VERSION}-1-x86_64.pkg.tar.zst"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "artifact_url=${ARTIFACT_URL}" >> "$GITHUB_OUTPUT"
           echo "Resolved version: ${VERSION}"
@@ -76,13 +75,13 @@ jobs:
         run: |
           git config --global user.name "Roberto Ramirez"
           git config --global user.email "${{ secrets.AUR_EMAIL }}"
-          git clone ssh://aur@aur.archlinux.org/electron39-v3-bin.git /tmp/aur-pkg || \
-            (mkdir -p /tmp/aur-pkg && cd /tmp/aur-pkg && git init && git remote add origin ssh://aur@aur.archlinux.org/electron39-v3-bin.git)
+          git clone ssh://aur@aur.archlinux.org/electron41-v3-bin.git /tmp/aur-pkg || \
+            (mkdir -p /tmp/aur-pkg && cd /tmp/aur-pkg && git init && git remote add origin ssh://aur@aur.archlinux.org/electron41-v3-bin.git)
 
       - name: Copy files and generate .SRCINFO
         run: |
           cp aur/PKGBUILD /tmp/aur-pkg/PKGBUILD
-          cp aur/electron39-v3-bin.install /tmp/aur-pkg/electron39-v3-bin.install
+          cp aur/electron41-v3-bin.install /tmp/aur-pkg/electron41-v3-bin.install
           cd /tmp/aur-pkg
 
           useradd -m builder 2>/dev/null || true
@@ -94,12 +93,12 @@ jobs:
           VERSION="${{ steps.meta.outputs.version }}"
           git config --global --add safe.directory /tmp/aur-pkg
           cd /tmp/aur-pkg
-          git add PKGBUILD .SRCINFO electron39-v3-bin.install
+          git add PKGBUILD .SRCINFO electron41-v3-bin.install
 
           if git diff --cached --quiet; then
             echo "No changes to publish"
             exit 0
           fi
 
-          git commit -m "Update electron39-v3-bin to ${VERSION}"
+          git commit -m "Update electron41-v3-bin to ${VERSION}"
           git push origin master

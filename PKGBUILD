@@ -10,8 +10,8 @@
 # Note: source array can be synced with an Electron release after updating $pkgver with:
 # bash -c 'source PKGBUILD; _update_sources'
 
-pkgver=39.5.2
-_gcc_patches=142
+pkgver=41.0.2
+_gcc_patches=146
 pkgrel=1
 _major_ver=${pkgver%%.*}
 pkgname="electron${_major_ver}"
