@@ -21,7 +21,7 @@ jobs:
           pacman -Syu --noconfirm git openssh pacman-contrib fakeroot base-devel
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve version and artifact URL
         id: meta
