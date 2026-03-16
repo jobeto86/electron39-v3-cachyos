@@ -44,6 +44,7 @@ jobs:
 
       - name: Push to AUR
         run: |
+          git config --global --add safe.directory /tmp/aur-pkg
           cd /tmp/aur-pkg
           git add PKGBUILD .SRCINFO
           git commit -m "Update electron39-v3-bin to $(grep pkgver= PKGBUILD | cut -d= -f2)" || echo "No changes"
